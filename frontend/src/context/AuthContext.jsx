@@ -1,6 +1,11 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
+// Set default base URL for axios
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
+axios.defaults.withCredentials = true; // Important for cookies
+
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
