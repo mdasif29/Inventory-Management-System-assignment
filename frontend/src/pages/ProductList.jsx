@@ -10,12 +10,14 @@ const ProductList = () => {
   const [pages, setPages] = useState(1);
   const [keyword, setKeyword] = useState('');
   const [stockStatus, setStockStatus] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchProducts = async () => {
     try {
       const { data } = await axios.get(`/api/products?pageNumber=${page}&keyword=${keyword}&stockStatus=${stockStatus}`);
       setProducts(data.products);
       setPages(data.pages);
+      setSelectedIds([]); // Clear selection on fetch
     } catch (error) {
       toast.error('Error fetching products');
     }
@@ -23,7 +25,7 @@ const ProductList = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [page, stockStatus]); // Refetch on page or filter change
+  }, [page, stockStatus]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -43,13 +45,43 @@ const ProductList = () => {
     }
   };
 
+  const toggleSelect = (id) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(itemId => itemId !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (window.confirm(`Delete ${selectedIds.length} products?`)) {
+      try {
+        await Promise.all(selectedIds.map(id => axios.delete(`/api/products/${id}`)));
+        toast.success('Products deleted');
+        fetchProducts();
+      } catch (error) {
+        toast.error('Bulk delete failed');
+      }
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Products</h1>
-        <Link to="/products/add" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center hover:bg-blue-700">
-          <Plus size={18} className="mr-2" /> Add Product
-        </Link>
+        <div className="flex gap-2">
+          {selectedIds.length > 0 && (
+            <button 
+              onClick={handleBulkDelete}
+              className="bg-red-600 text-white px-4 py-2 rounded flex items-center hover:bg-red-700"
+            >
+              <Trash2 size={18} className="mr-2" /> Delete Selected ({selectedIds.length})
+            </button>
+          )}
+          <Link to="/products/add" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center hover:bg-blue-700">
+            <Plus size={18} className="mr-2" /> Add Product
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-center">
@@ -75,6 +107,7 @@ const ProductList = () => {
           <option value="in">In Stock</option>
           <option value="low">Low Stock</option>
           <option value="out">Out of Stock</option>
+          
         </select>
       </div>
 
@@ -82,6 +115,19 @@ const ProductList = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-100 border-b">
+              <th className="p-4 w-10">
+                <input 
+                  type="checkbox" 
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(products.map(p => p.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                  checked={products.length > 0 && selectedIds.length === products.length}
+                />
+              </th>
               <th className="p-4">Image</th>
               <th className="p-4">Name</th>
               <th className="p-4">SKU</th>
@@ -94,6 +140,13 @@ const ProductList = () => {
           <tbody>
             {products.map((product) => (
               <tr key={product.id} className="border-b hover:bg-gray-50">
+                <td className="p-4">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.includes(product.id)}
+                    onChange={() => toggleSelect(product.id)}
+                  />
+                </td>
                 <td className="p-4">
                   {product.imageUrl ? (
                     <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover rounded" />

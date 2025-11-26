@@ -9,15 +9,26 @@ const seedDatabase = async () => {
 
         // Create Admin User
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('asif', salt);
+        const adminPassword = await bcrypt.hash('admin123', salt);
+        const managerPassword = await bcrypt.hash('manager123', salt);
 
         await User.create({
-            name: 'Admin Us',
-            email: 'asif@gmail.com',
-            password: hashedPassword,
+            name: 'Admin User',
+            email: 'admin@inventory.com',
+            password: adminPassword,
             role: 'admin'
         });
-        console.log('Admin user created: admin@example.com / admin123');
+
+        await User.create({
+            name: 'Manager User',
+            email: 'manager@inventory.com',
+            password: managerPassword,
+            role: 'manager'
+        });
+
+        console.log('Users created:');
+        console.log('Admin: admin@inventory.com / admin123');
+        console.log('Manager: manager@inventory.com / manager123');
 
         // Create Categories
         const categories = await Category.bulkCreate([
